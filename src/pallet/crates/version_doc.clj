@@ -83,7 +83,7 @@
 (defn generate
   "Generate a version document for the specified crate and output directory"
   [artifact-name crate-kw]
-  (let [f (file "resources/pallet"
+  (let [f (file "resources/pallet_crate"
                 (string/replace artifact-name #"-" "_") "meta.edn")
         _ (debug "Generating from file" (.getPath f))
         meta (read-edn (slurp f))]

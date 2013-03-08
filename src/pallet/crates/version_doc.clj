@@ -3,8 +3,10 @@
   (:require
    [clojure.java.io :refer [file resource]]
    [clojure.string :as string]
-   [leiningen.core.main :refer [abort debug]]
    [stencil.core :refer [render-file]]))
+
+(defn debug [& args]
+  #_(apply println args))
 
 (defn read-edn [f]
   (binding [*read-eval* false]
@@ -17,7 +19,9 @@
   [template-name]
   (let [f (str "pallet/crates/doc/" (name template-name) ".md")]
     (when-not (resource f)
-      (abort f "doesn't exist on the classpath"))
+      (throw (ex-info
+              (str f "doesn't exist on the classpath")
+              {:exit-code 1})))
     f))
 
 (defn crate-doc-file [dir crate]
@@ -43,6 +47,7 @@
 (defn generate-doc
   "Generate version document for the crate with the specified values."
   [[crate {:keys [versions] :as values}] outputs]
+  (debug "Generating doc " crate values)
   (let [values (merge defaults values)
         versions (map (partial version-info crate values) versions)
         default-version (last (sort-by :version versions))
@@ -62,21 +67,45 @@
 
 (defn generate-docs [meta output-dir]
   (.mkdirs (file output-dir "_posts"))
-  (doseq [[crate :as crate-entry] meta]
-    (generate-doc crate-entry [[(crate-doc-file output-dir crate) :crate]])))
+  (doseq [[crate values :as crate-entry] meta]
+    (generate-doc [crate (:meta values)]
+                  [[(crate-doc-file output-dir crate) :crate]])))
 
 (defn generate-index [meta output-dir]
-  (let [values (for [[crate {:keys [header] :as values}] meta]
-                 {:header header :crate-name (name crate)})]
+  (let [values (for [[crate {:keys [meta]}] meta]
+                 {:header (:header meta) :crate-name (name crate)})]
     (debug "Generating index" values)
     (spit (crate-index-file output-dir)
-          (render-file "pallet/doc/index.md" {:crates values}))))
+          (render-file "pallet/crates/doc/index.md" {:crates values}))))
 
-(defn generate-all [output-dir]
-  (let [f (resource "pallet/crate/meta.edn")
-        _ (debug "File" f)
-        meta (read-edn (slurp f))]
-    (debug "Meta" meta)
+(defn combine-meta-resources [resource-paths]
+  (reduce
+   (fn [m [k v]]
+     (update-in m [k] merge v))
+   {}
+   (for [resource-path resource-paths
+         :let [meta (re-find #"pallet_crate/([a-z_]+)_crate/meta.edn"
+                             resource-path)
+               usage (re-find #"pallet_crate/([a-z_]+)_crate/USAGE.md"
+                              resource-path)
+               crate-name (or (second meta) (second usage))
+               crate-kw (and crate-name
+                             (keyword (string/replace crate-name #"_" "-")))
+               _ (debug "resource-path" resource-path "for" crate-kw)]]
+     (if crate-name
+       (cond
+        meta (when-let [path (resource resource-path)]
+               (debug "path" path)
+               [crate-kw {:meta (read-edn (slurp path))}])
+        usage (when-let [path (resource resource-path)]
+                (debug "path" path)
+                [crate-kw {:usage (slurp path)}]))
+       (debug "Ignoring unrecognised resource" resource-path)))))
+
+(defn generate-all [meta-paths output-dir]
+  (debug "meta-paths" meta-paths)
+  (let [meta (combine-meta-resources meta-paths)]
+    (debug "meta" meta)
     (generate-docs meta output-dir)
     (generate-index meta output-dir)))
 

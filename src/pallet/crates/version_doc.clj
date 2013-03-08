@@ -2,6 +2,7 @@
   "Generate version documentation for a pallet crate."
   (:require
    [clojure.java.io :refer [file resource]]
+   [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
    [stencil.core :refer [render-file]]))
 
@@ -25,6 +26,7 @@
     f))
 
 (defn crate-doc-file [dir crate]
+  (debug "crate-doc-file" dir crate)
   (file dir "_posts" (format "2012-01-01-%s.md" (name crate))))
 
 (defn crate-index-file [dir]
@@ -68,8 +70,7 @@
 (defn generate-docs [meta output-dir]
   (.mkdirs (file output-dir "_posts"))
   (doseq [[crate values :as crate-entry] meta]
-    (generate-doc [crate (:meta values)]
-                  [[(crate-doc-file output-dir crate) :crate]])))
+    (generate-doc [crate values] [[(crate-doc-file output-dir crate) :crate]])))
 
 (defn generate-index [meta output-dir]
   (let [values (for [[crate {:keys [meta]}] meta]
@@ -78,36 +79,43 @@
     (spit (crate-index-file output-dir)
           (render-file "pallet/crates/doc/index.md" {:crates values}))))
 
+(defn generate-meta [meta output-path]
+  (debug "Generating meta")
+  (spit output-path (with-out-str (pprint meta))))
+
 (defn combine-meta-resources [resource-paths]
   (reduce
    (fn [m [k v]]
      (update-in m [k] merge v))
    {}
-   (for [resource-path resource-paths
-         :let [meta (re-find #"pallet_crate/([a-z_]+)_crate/meta.edn"
-                             resource-path)
-               usage (re-find #"pallet_crate/([a-z_]+)_crate/USAGE.md"
+   (remove
+    nil?
+    (for [resource-path resource-paths
+          :let [meta (re-find #"pallet_crate/([a-z_]+)_crate/meta.edn"
                               resource-path)
-               crate-name (or (second meta) (second usage))
-               crate-kw (and crate-name
-                             (keyword (string/replace crate-name #"_" "-")))
-               _ (debug "resource-path" resource-path "for" crate-kw)]]
-     (if crate-name
-       (cond
-        meta (when-let [path (resource resource-path)]
-               (debug "path" path)
-               [crate-kw {:meta (read-edn (slurp path))}])
-        usage (when-let [path (resource resource-path)]
+                usage (re-find #"pallet_crate/([a-z_]+)_crate/USAGE.md"
+                               resource-path)
+                crate-name (or (second meta) (second usage))
+                crate-kw (and crate-name
+                              (keyword (string/replace crate-name #"_" "-")))
+                _ (debug "resource-path" resource-path "for" crate-kw)]]
+      (if crate-name
+        (cond
+         meta (when-let [path (resource resource-path)]
                 (debug "path" path)
-                [crate-kw {:usage (slurp path)}]))
-       (debug "Ignoring unrecognised resource" resource-path)))))
+                [crate-kw (read-edn (slurp path))])
+         usage (when-let [path (resource resource-path)]
+                 (debug "path" path)
+                 [crate-kw {:usage (slurp path)}]))
+        (debug "Ignoring unrecognised resource" resource-path))))))
 
-(defn generate-all [meta-paths output-dir]
+(defn generate-all [meta-paths output-dir meta-path]
   (debug "meta-paths" meta-paths)
   (let [meta (combine-meta-resources meta-paths)]
     (debug "meta" meta)
     (generate-docs meta output-dir)
-    (generate-index meta output-dir)))
+    (generate-index meta output-dir)
+    (generate-meta meta meta-path)))
 
 (defn generate
   "Generate a version document for the specified crate and output directory"

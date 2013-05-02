@@ -6,7 +6,7 @@ A lein plugin for managing pallet crates.
 
 Add the following to your `:plugins` in `~/.lein/profiles.clj`
 
-    :plugins [[com.palletops/lein-pallet-crate "0.1.0"]]
+    :plugins [[com.palletops/lein-pallet-crate "0.1.1"]]
 
 ## Usage
 

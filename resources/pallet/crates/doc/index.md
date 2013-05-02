@@ -1,3 +1,3 @@
 {{#crates}}
-  - [{{header}}](/doc/crates/{{crate-name}})
+- [{{header}}](/doc/crates/{{crate-name}})
 {{/crates}}

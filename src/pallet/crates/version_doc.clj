@@ -73,8 +73,9 @@
     (generate-doc [crate values] [[(crate-doc-file output-dir crate) :crate]])))
 
 (defn generate-index [meta output-dir]
-  (let [values (for [[crate {:keys [meta]}] meta]
-                 {:header (:header meta) :crate-name (name crate)})]
+  (let [values (->> (for [[crate {:keys [header]}] meta]
+                      {:header header :crate-name (name crate)})
+                    (sort-by :header))]
     (debug "Generating index" values)
     (spit (crate-index-file output-dir)
           (render-file "pallet/crates/doc/index.md" {:crates values}))))
@@ -82,6 +83,13 @@
 (defn generate-meta [meta output-path]
   (debug "Generating meta")
   (spit output-path (with-out-str (pprint meta))))
+
+(defn translate-code-blocks
+  [s]
+  (-> s
+      (string/replace #"```clj" "{% highlight clojure %}")
+      (string/replace #"```bash" "{% highlight bash %}")
+      (string/replace #"```" "{% endhighlight %}")))
 
 (defn combine-meta-resources [resource-paths]
   (reduce
@@ -106,7 +114,7 @@
                 [crate-kw (read-edn (slurp path))])
          usage (when-let [path (resource resource-path)]
                  (debug "path" path)
-                 [crate-kw {:usage (slurp path)}]))
+                 [crate-kw {:usage (translate-code-blocks (slurp path))}]))
         (debug "Ignoring unrecognised resource" resource-path))))))
 
 (defn generate-all [meta-paths output-dir meta-path]

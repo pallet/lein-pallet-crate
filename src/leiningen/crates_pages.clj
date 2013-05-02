@@ -10,7 +10,7 @@
    [pallet.crates.version-doc :refer [generate-all]]))
 
 (def self-profile
-  {:dependencies [['com.palletops/lein-pallet-crate "0.1.0-SNAPSHOT"]]})
+  {:dependencies [['com.palletops/lein-pallet-crate "0.1.1-SNAPSHOT"]]})
 
 (defn chiba-list-form
   "Creates a form to list files matching a given prefix"

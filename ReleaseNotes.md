@@ -1,3 +1,10 @@
+## 0.1.2
+
+- Update self version in crates_pages.clj on release
+
+- Add middleware
+  Removes the need to configure the resource plugin, and add :prep-tasks.
+
 # lein-pallet-crate
 
 ## 0.1.1

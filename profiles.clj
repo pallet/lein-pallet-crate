@@ -1,6 +1,9 @@
 {:dev {:plugins [[lein-pallet-release "RELEASE"]
                  [lein-marginalia "0.7.1"]
-                 [codox/codox.leiningen "0.6.4"]]}
+                 [codox/codox.leiningen "0.6.4"]]
+       :pallet-release
+       {:url "https://pbors:${GH_TOKEN}@github.com/pallet/lein-pallet-crate.git",
+        :branch "master"}}
  :doc {:dependencies [[codox-md "0.2.0"]]
        :codox {:writer codox-md.writer/write-docs
                :output-dir "doc/0.1/api"

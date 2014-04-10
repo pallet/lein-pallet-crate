@@ -11,4 +11,10 @@
                :src-linenum-anchor-prefix "L"}
        :aliases {"marg" ["marg" "-d" "doc/0.1/annotated/"]
                  "codox" ["doc"]
-                 "doc" ["do" "codox," "marg"]}}}
+                 "doc" ["do" "codox," "marg"]}}
+ :release {:set-version
+           {:updates
+            [{:path "README.md",:no-snapshot true}
+             {:path "src/leiningen/crates_pages.clj"
+              :search-regex
+              #"lein-pallet-crate \"\d+\.\d+\.\d+(-SNAPSHOT)?\""}]}}}

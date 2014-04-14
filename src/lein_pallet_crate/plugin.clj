@@ -47,12 +47,11 @@
   "Middleware to add profiles."
   [project]
   (let [profiles (deep-merge (-> project meta :profiles) (profiles project))]
-    (-> project
-        (add-profiles profiles)
-        ;; merge conditionally, so when called by e.g. test, the :test
-        ;; profile doesn't get clobbered.
-        (cond->
-         (= ["javac" "compile"] (:prep-tasks project))
-         (merge-project (resources project)))
-
-        (vary-meta update-in [:included-profiles] conj :resources))))
+    ;; merge conditionally, so the merge is only forced once.  Once in
+    ;; included-profiles, lein should handle merging correctly
+    (cond-> project
+            (not (some #(= :resources %) (-> project meta :included-profiles)))
+            (-> (add-profiles profiles)
+                (#'project/apply-profiles [(:resources profiles)])
+                (vary-meta update-in [:included-profiles] conj :resources)
+                (vary-meta update-in [:excluded-profiles] conj :test)))))

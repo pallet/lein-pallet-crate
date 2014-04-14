@@ -1,4 +1,4 @@
-(defproject com.palletops/lein-pallet-crate "0.1.3"
+(defproject com.palletops/lein-pallet-crate "0.1.4-SNAPSHOT"
   :description "A lein plugin for managing pallet crates"
   :url "https://github.com/pallet/lein-pallet-crate"
   :license {:name "Eclipse Public License"

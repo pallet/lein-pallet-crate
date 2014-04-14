@@ -1,3 +1,7 @@
+## 0.1.3
+
+- Do not run resources and crate-doc in test task
+
 ## 0.1.2
 
 - Update self version in crates_pages.clj on release
